@@ -1,0 +1,33 @@
+// server/routes/aboutRoutes.js
+const express = require("express");
+const router = express.Router();
+
+const {
+  createAbout,
+  getAbout,
+  getAboutsPaginated,
+  updateAbout,
+  deleteAbout,
+} = require("../controller/aboutController");
+
+// Create About page (usually once)
+router.post("/", createAbout);
+
+// Get singleton about page (by slug "about" or first doc)
+router.get("/", getAbout);
+
+// Paginated list of all About docs (for admin / future versions)
+router.get("/list/all", getAboutsPaginated);
+
+// Get specific About page by id
+router.get("/:id", getAbout);
+
+// Update singleton or by id
+router.put("/", updateAbout);
+router.put("/:id", updateAbout);
+
+// Delete singleton or by id
+router.delete("/", deleteAbout);
+router.delete("/:id", deleteAbout);
+
+module.exports = router;
