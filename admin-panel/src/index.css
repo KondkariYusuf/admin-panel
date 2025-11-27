@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* optional: tweak default dark background/text */
+:root {
+  --bg: #0b1020;
+  --panel: #0f1724;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+}
+
+.dark {
+  --bg: #0b1020;
+  --panel: #0f1724;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+}
+
+body {
+  background-color: var(--bg);
+  color: #e6eef8;
+}
