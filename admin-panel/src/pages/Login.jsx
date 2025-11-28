@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import api from "../api/axios";
+
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,18 +25,19 @@ export default function Login() {
     }
 
     try {
-      // send to backend (remove if not ready)
-      const res = await api.post("/auth/login", form);
+  const res = await api.post("/auth/login", form);
+  console.log("RES:", res); // <--- add this
+  if (res.data?.token) {
+    localStorage.setItem("token", res.data.token);
+    navigate("/");
+  } else {
+    setError("Invalid email or password");
+  }
+} catch (err) {
+  console.log("ERR:", err); // <--- add this
+  setError(err.response?.data?.message || "Login failed.");
+}
 
-      if (res.data?.token) {
-        localStorage.setItem("token", res.data.token);
-        navigate("/");
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Login failed.");
-    }
   };
 
   return (

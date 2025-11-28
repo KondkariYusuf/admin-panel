@@ -11,6 +11,12 @@ const {
   deleteHome,
 } = require("../controller/homeController");
 
+
+// Protect all routes below this line
+const { protect } = require("../middleware/authMiddleware");
+router.use(protect);
+
+
 // Create home (usually once) - JSON body
 router.post("/", createHome);
 
