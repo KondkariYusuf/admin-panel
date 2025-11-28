@@ -1,6 +1,43 @@
+// // server/routes/homeRoutes.js
+// const express = require("express");
+// const router = express.Router();
+
+// const {
+//   createHome,
+//   getHome,
+//   updateHome,
+//   deleteHome,
+// } = require("../controller/homeController");
+
+// // Create home (usually once)
+// router.post("/", createHome);
+
+// // Get default "home" (by slug or first doc)
+// router.get("/", getHome);
+
+// // Get specific home by id
+// router.get("/:id", getHome);
+
+// // Update default home
+// router.put("/", updateHome);
+
+// // Update specific home by id
+// router.put("/:id", updateHome);
+
+// // Delete default home
+// router.delete("/", deleteHome);
+
+// // Delete specific home by id
+// router.delete("/:id", deleteHome);
+
+// module.exports = router;
+
+
 // server/routes/homeRoutes.js
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 
 const {
   createHome,
@@ -9,7 +46,7 @@ const {
   deleteHome,
 } = require("../controller/homeController");
 
-// Create home (usually once)
+// Create home (usually once) - JSON body
 router.post("/", createHome);
 
 // Get default "home" (by slug or first doc)
@@ -18,11 +55,11 @@ router.get("/", getHome);
 // Get specific home by id
 router.get("/:id", getHome);
 
-// Update default home
-router.put("/", updateHome);
+// Update default home (with optional file uploads)
+router.put("/", upload.any(), updateHome);
 
-// Update specific home by id
-router.put("/:id", updateHome);
+// Update specific home by id (with optional file uploads)
+router.put("/:id", upload.any(), updateHome);
 
 // Delete default home
 router.delete("/", deleteHome);

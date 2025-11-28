@@ -1,26 +1,12 @@
 // server/controllers/aboutController.js
 const mongoose = require("mongoose");
-const AboutPage = require("../models/about"); // adjust path/case if needed
+const AboutPage = require("../models/about");
+const cloudinary = require("../utils/cloudinary"); // ⬅️ add this
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const getAboutDoc = async (aboutId) => {
-  // If an ID is passed, try by ID
-  if (aboutId) {
-    if (!isValidId(aboutId)) return null;
-    return await AboutPage.findById(aboutId);
-  }
-
-  // Prefer slug "about"
-  let about = await AboutPage.findOne({ slug: "about" });
-  if (!about) {
-    about = await AboutPage.findOne();
-  }
-  return about;
-};
-
-/* ---------- CREATE ABOUT PAGE ---------- */
-// Typically you’ll only create this once
+// /* ---------- CREATE ABOUT PAGE ---------- */
+// // Typically you’ll only create this once
 const createAbout = async (req, res) => {
   try {
     const existing = await AboutPage.findOne({ slug: "about" });
@@ -116,7 +102,64 @@ const getAboutsPaginated = async (req, res) => {
   }
 };
 
-/* ---------- UPDATE ABOUT PAGE ---------- */
+// /* ---------- DELETE ABOUT PAGE ---------- */
+
+const deleteAbout = async (req, res) => {
+  try {
+    const aboutId = req.params.id;
+    let deleted;
+
+    if (aboutId) {
+      if (!isValidId(aboutId))
+        return res.status(400).json({ message: "Invalid about id" });
+      deleted = await AboutPage.findByIdAndDelete(aboutId);
+    } else {
+      const first =
+        (await AboutPage.findOne({ slug: "about" })) ||
+        (await AboutPage.findOne());
+      if (!first) return res.status(404).json({ message: "About page not found" });
+      deleted = await AboutPage.findByIdAndDelete(first._id);
+    }
+
+    if (!deleted)
+      return res.status(404).json({ message: "About page not found" });
+
+    res.status(200).json({ message: "About page deleted", about: deleted });
+  } catch (error) {
+    console.error("deleteAbout error:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting About page", error: error.message });
+  }
+};
+
+
+const getAboutDoc = async (aboutId) => {
+  if (aboutId) {
+    if (!isValidId(aboutId)) return null;
+    return await AboutPage.findById(aboutId);
+  }
+
+  let about = await AboutPage.findOne({ slug: "about" });
+  if (!about) {
+    about = await AboutPage.findOne();
+  }
+  return about;
+};
+
+// helper: upload buffer to cloudinary
+const uploadBufferToCloudinary = (buffer, folder, resource_type = "image") =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
 
 const updateAbout = async (req, res) => {
   try {
@@ -124,6 +167,86 @@ const updateAbout = async (req, res) => {
     const about = await getAboutDoc(aboutId);
     if (!about) return res.status(404).json({ message: "About page not found" });
 
+    // If multipart form: frontend sends 'payload' as JSON string
+    let incoming;
+    if (req.body && req.body.payload) {
+      try {
+        incoming = JSON.parse(req.body.payload);
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid JSON in payload" });
+      }
+    } else {
+      incoming = req.body || {};
+    }
+
+    const files = req.files || [];
+
+    // 1. Gallery images (fields: gallery_0, gallery_1, ...)
+    const galleryFiles = files.filter((f) => f.fieldname.startsWith("gallery_"));
+    if (
+      incoming.aboutArea &&
+      Array.isArray(incoming.aboutArea.galleryImages)
+    ) {
+      for (const file of galleryFiles) {
+        const parts = file.fieldname.split("_");
+        const index = Number(parts[1]);
+        if (
+          !Number.isNaN(index) &&
+          incoming.aboutArea.galleryImages[index]
+        ) {
+          const uploaded = await uploadBufferToCloudinary(
+            file.buffer,
+            "about/gallery",
+            "image"
+          );
+          incoming.aboutArea.galleryImages[index].imageUrl =
+            uploaded.secure_url;
+        }
+      }
+    }
+
+    // 2. Media image (field: mediaImage)
+    const mediaFile = files.find((f) => f.fieldname === "mediaImage");
+    if (mediaFile) {
+      const uploaded = await uploadBufferToCloudinary(
+        mediaFile.buffer,
+        "about/media",
+        "image"
+      );
+      incoming.mediaSection = {
+        ...(incoming.mediaSection || {}),
+        mediaImage: {
+          ...(incoming.mediaSection?.mediaImage || {}),
+          imageUrl: uploaded.secure_url,
+        },
+      };
+    }
+
+    // 3. Team images (fields: teamImage_0, teamImage_1, ...)
+    const teamFiles = files.filter((f) => f.fieldname.startsWith("teamImage_"));
+    if (
+      incoming.teamSection &&
+      Array.isArray(incoming.teamSection.members)
+    ) {
+      for (const file of teamFiles) {
+        const parts = file.fieldname.split("_");
+        const index = Number(parts[1]);
+        if (
+          !Number.isNaN(index) &&
+          incoming.teamSection.members[index]
+        ) {
+          const uploaded = await uploadBufferToCloudinary(
+            file.buffer,
+            "about/team",
+            "image"
+          );
+          incoming.teamSection.members[index].imageUrl =
+            uploaded.secure_url;
+        }
+      }
+    }
+
+    // destructure AFTER we’ve possibly injected Cloudinary URLs
     const {
       pageTitle,
       aboutArea,
@@ -133,14 +256,14 @@ const updateAbout = async (req, res) => {
       awardsSection,
       teamSection,
       slug,
-    } = req.body || {};
+    } = incoming || {};
 
     // Helper to merge nested objects safely
-    const mergeSection = (current, incoming) => {
-      if (!incoming) return current;
+    const mergeSection = (current, inc) => {
+      if (!inc) return current;
       const base =
         current && current.toObject ? current.toObject() : current || {};
-      return { ...base, ...incoming };
+      return { ...base, ...inc };
     };
 
     if (pageTitle) {
@@ -152,10 +275,7 @@ const updateAbout = async (req, res) => {
     }
 
     if (approachSection) {
-      about.approachSection = mergeSection(
-        about.approachSection,
-        approachSection
-      );
+      about.approachSection = mergeSection(about.approachSection, approachSection);
     }
 
     if (infoSection) {
@@ -185,37 +305,6 @@ const updateAbout = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error updating About page", error: error.message });
-  }
-};
-
-/* ---------- DELETE ABOUT PAGE ---------- */
-
-const deleteAbout = async (req, res) => {
-  try {
-    const aboutId = req.params.id;
-    let deleted;
-
-    if (aboutId) {
-      if (!isValidId(aboutId))
-        return res.status(400).json({ message: "Invalid about id" });
-      deleted = await AboutPage.findByIdAndDelete(aboutId);
-    } else {
-      const first =
-        (await AboutPage.findOne({ slug: "about" })) ||
-        (await AboutPage.findOne());
-      if (!first) return res.status(404).json({ message: "About page not found" });
-      deleted = await AboutPage.findByIdAndDelete(first._id);
-    }
-
-    if (!deleted)
-      return res.status(404).json({ message: "About page not found" });
-
-    res.status(200).json({ message: "About page deleted", about: deleted });
-  } catch (error) {
-    console.error("deleteAbout error:", error);
-    res
-      .status(500)
-      .json({ message: "Error deleting About page", error: error.message });
   }
 };
 
