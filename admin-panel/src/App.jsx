@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import HomePage from './pages/HomePage'
 import PortfolioPage from './pages/PortfolioPage'
 import AboutPage from './pages/AboutPage'
+import ServiceInfo from './pages/ServiceInfo'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/about" element={<AboutPage/>}/>
+        <Route path="/services" element={<ServiceInfo/>}/>
       </Routes>
       
     </Router>

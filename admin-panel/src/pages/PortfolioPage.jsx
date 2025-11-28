@@ -1,13 +1,9 @@
-
 // src/pages/PortfolioPage.jsx
 import React, { useEffect, useState } from "react";
-import api from "../api/axios.js"; 
+import api from "../api/axios.js";
 import TagInput from "../components/TagInput";
 import ImageUpload from "../components/ImageUpload";
 import Navbar from "../components/Navbar";
-
-
- 
 
 const emptyModel = {
   recentWork: {
@@ -27,23 +23,21 @@ const emptyModel = {
 
 export default function PortfolioPage() {
   const [model, setModel] = useState(emptyModel);
-  const [projectImages, setProjectImages] = useState([]); // local File objects per project index
+  const [projectImages, setProjectImages] = useState([]); // File per project index
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [portfolioId, setPortfolioId] = useState(null); // holds _id from server if exists
+  const [portfolioId, setPortfolioId] = useState(null);
 
-  // helpers for updating nested fields
   const setRecentWork = (patch) =>
     setModel((m) => ({ ...m, recentWork: { ...m.recentWork, ...patch } }));
 
   const setProjects = (arr) => setModel((m) => ({ ...m, projects: arr }));
 
   useEffect(() => {
-    // load existing portfolio on mount
     (async function load() {
       try {
         setLoading(true);
-        const res = await api.get("/portfolio"); // controller: router.get('/', controller.getPortfolio);
+        const res = await api.get("/portfolio");
         if (res?.data) {
           const portfolio = res.data;
           setModel({
@@ -51,14 +45,17 @@ export default function PortfolioPage() {
             projects: portfolio.projects || [],
           });
           setPortfolioId(portfolio._id || null);
-          // initialize projectImages array same length
-          setProjectImages((prev) => Array((portfolio.projects || []).length).fill(null));
+          setProjectImages(
+            Array((portfolio.projects || []).length).fill(null)
+          );
         } else {
           setModel(emptyModel);
         }
       } catch (err) {
-        // If 404 or empty, keep default model
-        console.warn("Load portfolio failed (may be empty):", err?.response?.data || err.message);
+        console.warn(
+          "Load portfolio failed (may be empty):",
+          err?.response?.data || err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -78,7 +75,9 @@ export default function PortfolioPage() {
   };
 
   const updateProjectLocal = (index, patch) => {
-    const next = model.projects.map((p, i) => (i === index ? { ...p, ...patch } : p));
+    const next = model.projects.map((p, i) =>
+      i === index ? { ...p, ...patch } : p
+    );
     setProjects(next);
   };
 
@@ -94,77 +93,80 @@ export default function PortfolioPage() {
       copy[index] = files && files.length ? files[0] : null;
       return copy;
     });
-    // clear imageUrl locally so it indicates a replacement needed
+    // clear imageUrl -> server will replace via Cloudinary
     updateProjectLocal(index, { imageUrl: "" });
   };
 
-  
-  async function uploadFile(file) {
-    if (!file) return null;
-
-    throw new Error(
-      "No upload endpoint implemented. Implement POST /upload to accept files and return { url } or set imageUrl manually."
-    );
-  }
-
- 
+  // MAIN SAVE (Create/Update) with multipart + Cloudinary
   const savePortfolio = async (e) => {
     e?.preventDefault?.();
     setMessage("");
     setLoading(true);
 
     try {
-      
+      const fd = new FormData();
       const payload = JSON.parse(JSON.stringify(model));
 
-      
-      for (let i = 0; i < projectImages.length; i++) {
-        const file = projectImages[i];
+      // Clear imageUrl where new file selected
+      payload.projects = (payload.projects || []).map((p, idx) => {
+        const hasFile = !!projectImages[idx];
+        return hasFile ? { ...p, imageUrl: "" } : p;
+      });
+
+      fd.append("payload", JSON.stringify(payload));
+
+      // Attach image files
+      projectImages.forEach((file, idx) => {
         if (file) {
-          try {
-            const url = await uploadFile(file); // <-- requires server /upload
-            if (url) payload.projects[i].imageUrl = url;
-          } catch (uploadErr) {
-            // upload failed — inform user and stop; user can still save JSON-only portfolio if they remove files or give imageUrl manually
-            setMessage(
-              "File upload not configured. Either implement POST /upload or remove local images and use imageUrl strings."
-            );
-            setLoading(false);
-            return;
-          }
+          fd.append(`projectImage_${idx}`, file, file.name);
         }
-      }
+      });
 
       let res;
       if (portfolioId) {
-        // update existing portfolio
-        res = await api.put(`/portfolio/${portfolioId}`, {
-          recentWork: payload.recentWork,
-          projects: payload.projects,
+        // update existing singleton
+        res = await api.put("/portfolio", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        setMessage(res.data?.message || "Portfolio updated.");
       } else {
         // create new portfolio
-        res = await api.post("/portfolio", {
-          recentWork: payload.recentWork,
-          projects: payload.projects,
+        res = await api.post("/portfolio", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        setMessage(res.data?.message || "Portfolio created.");
-        // store new id if returned
-        if (res.data?.portfolio?._id) setPortfolioId(res.data.portfolio._id);
+      }
+
+      const data = res.data;
+      setMessage(data?.message || (portfolioId ? "Portfolio updated." : "Portfolio created."));
+
+      if (data?.portfolio?._id) {
+        setPortfolioId(data.portfolio._id);
+        // sync local model with server response if you want:
+        if (data.portfolio.projects) {
+          setProjects(data.portfolio.projects);
+          setProjectImages(
+            Array((data.portfolio.projects || []).length).fill(null)
+          );
+        }
+        if (data.portfolio.recentWork) {
+          setRecentWork(data.portfolio.recentWork);
+        }
       }
     } catch (err) {
       console.error("savePortfolio error:", err);
-      setMessage(err.response?.data?.message || err.message || "Save failed.");
+      setMessage(
+        err.response?.data?.message || err.message || "Save failed."
+      );
     } finally {
       setLoading(false);
     }
   };
 
- 
+  // Remote project operations – JSON only (no file upload here)
   const addProjectRemote = async (index) => {
     if (!portfolioId) {
-      setMessage("Create a portfolio first (Save Portfolio) before adding single projects via API.");
+      setMessage(
+        "Create a portfolio first (Save Portfolio) before adding single projects via API."
+      );
       return;
     }
     const project = model.projects[index];
@@ -173,27 +175,21 @@ export default function PortfolioPage() {
       return;
     }
 
+    if (projectImages[index]) {
+      setMessage(
+        "To upload a new image for this project, use Save Portfolio instead of Add remote."
+      );
+      return;
+    }
+
     setLoading(true);
     setMessage("");
     try {
-      
-      let imageUrlToSend = project.imageUrl || "";
-      if (projectImages[index]) {
-        try {
-          const url = await uploadFile(projectImages[index]); // requires /upload endpoint
-          imageUrlToSend = url;
-        } catch (uploadErr) {
-          setMessage("No upload endpoint configured. Provide imageUrl manually or implement /upload.");
-          setLoading(false);
-          return;
-        }
-      }
-
       const res = await api.post(`/portfolio/${portfolioId}/projects`, {
         title: project.title,
         year: project.year,
         category: project.category,
-        imageUrl: imageUrlToSend,
+        imageUrl: project.imageUrl || "",
       });
 
       if (res.data?.project) {
@@ -206,88 +202,95 @@ export default function PortfolioPage() {
       }
     } catch (err) {
       console.error("addProjectRemote error:", err);
-      setMessage(err.response?.data?.message || err.message || "Add project failed.");
+      setMessage(
+        err.response?.data?.message ||
+          err.message ||
+          "Add project failed."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  
-  
   const updateProjectRemote = async (index) => {
     const project = model.projects[index];
     if (!portfolioId || !project || !project._id) {
-      setMessage("Project must exist on server (has _id) to update remotely. Use Save Portfolio to create portfolio first.");
+      setMessage(
+        "Project must exist on server (has _id) to update remotely. Use Save Portfolio to create portfolio first."
+      );
+      return;
+    }
+
+    if (projectImages[index]) {
+      setMessage(
+        "To upload a new image for this project, use Save Portfolio instead of Update remote."
+      );
       return;
     }
 
     setLoading(true);
     setMessage("");
     try {
-      let imageUrlToSend = project.imageUrl || "";
-      if (projectImages[index]) {
-        try {
-          const url = await uploadFile(projectImages[index]);
-          imageUrlToSend = url;
-        } catch {
-          setMessage("No upload endpoint configured. Provide imageUrl manually or implement /upload.");
-          setLoading(false);
-          return;
-        }
-      }
-
       const res = await api.put(
         `/portfolio/${portfolioId}/projects/${project._id}`,
         {
           title: project.title,
           year: project.year,
           category: project.category,
-          imageUrl: imageUrlToSend,
+          imageUrl: project.imageUrl || "",
         }
       );
 
       setMessage(res.data?.message || "Project updated.");
-      // update local with server response (if provided)
       if (res.data?.project) {
-        const next = model.projects.map((p, i) => (i === index ? res.data.project : p));
+        const next = model.projects.map((p, i) =>
+          i === index ? res.data.project : p
+        );
         setProjects(next);
       }
     } catch (err) {
       console.error("updateProjectRemote error:", err);
-      setMessage(err.response?.data?.message || err.message || "Update project failed.");
+      setMessage(
+        err.response?.data?.message ||
+          err.message ||
+          "Update project failed."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  
   const deleteProjectRemote = async (index) => {
     const project = model.projects[index];
     if (!portfolioId || !project || !project._id) {
-      // If not on server yet, delete locally
       removeProjectLocal(index);
       setMessage("Project removed locally.");
       return;
     }
 
-    if (!confirm("Delete this project on server? This cannot be undone.")) return;
+    if (!confirm("Delete this project on server? This cannot be undone."))
+      return;
 
     setLoading(true);
     setMessage("");
     try {
-      const res = await api.delete(`/portfolio/${portfolioId}/projects/${project._id}`);
+      const res = await api.delete(
+        `/portfolio/${portfolioId}/projects/${project._id}`
+      );
       setMessage(res.data?.message || "Project deleted.");
-      // remove locally as well
       removeProjectLocal(index);
     } catch (err) {
       console.error("deleteProjectRemote error:", err);
-      setMessage(err.response?.data?.message || err.message || "Delete failed.");
+      setMessage(
+        err.response?.data?.message ||
+          err.message ||
+          "Delete failed."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  
   const deletePortfolio = async () => {
     if (!portfolioId) {
       setMessage("No portfolio to delete.");
@@ -299,19 +302,21 @@ export default function PortfolioPage() {
     try {
       const res = await api.delete(`/portfolio/${portfolioId}`);
       setMessage(res.data?.message || "Portfolio deleted.");
-      // reset local state
       setModel(emptyModel);
       setPortfolioId(null);
       setProjectImages([]);
     } catch (err) {
       console.error("deletePortfolio error:", err);
-      setMessage(err.response?.data?.message || err.message || "Delete failed.");
+      setMessage(
+        err.response?.data?.message ||
+          err.message ||
+          "Delete failed."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  
   return (
     <div className="p-1 mx-auto">
       <Navbar />
@@ -319,7 +324,9 @@ export default function PortfolioPage() {
         <h1 className="text-2xl font-semibold mb-4">Edit Portfolio</h1>
 
         {message && (
-          <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm ">{message}</div>
+          <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm ">
+            {message}
+          </div>
         )}
 
         <form onSubmit={savePortfolio} className="space-y-6">
@@ -335,7 +342,9 @@ export default function PortfolioPage() {
               className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
             />
 
-            <label className="text-sm text-[var(--muted)] mt-3 block">Subheading</label>
+            <label className="text-sm text-[var(--muted)] mt-3 block">
+              Subheading
+            </label>
             <input
               type="text"
               value={model.recentWork.subheading}
@@ -344,8 +353,13 @@ export default function PortfolioPage() {
             />
 
             <div className="mt-3">
-              <label className="text-sm text-[var(--muted)] block mb-2">Services</label>
-              <TagInput value={model.recentWork.services} onChange={(arr) => setRecentWork({ services: arr })} />
+              <label className="text-sm text-[var(--muted)] block mb-2">
+                Services
+              </label>
+              <TagInput
+                value={model.recentWork.services}
+                onChange={(arr) => setRecentWork({ services: arr })}
+              />
             </div>
           </section>
 
@@ -354,15 +368,23 @@ export default function PortfolioPage() {
             <div className="flex items-center justify-between">
               <h2 className="font-medium">Projects</h2>
               <div className="flex gap-2">
-                <button type="button" onClick={addProjectLocal} className="px-3 py-1 rounded bg-white/6 text-sm">
+                <button
+                  type="button"
+                  onClick={addProjectLocal}
+                  className="px-3 py-1 rounded bg-white/6 text-sm"
+                >
                   + Add project (local)
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
-                    // quick add sample project
-                    const newP = { title: "New Project", year: new Date().getFullYear(), category: "Category", imageUrl: "" };
+                    const newP = {
+                      title: "New Project",
+                      year: new Date().getFullYear(),
+                      category: "Category",
+                      imageUrl: "",
+                    };
                     setProjects([...model.projects, newP]);
                     setProjectImages((prev) => [...prev, null]);
                   }}
@@ -371,7 +393,11 @@ export default function PortfolioPage() {
                   + Sample
                 </button>
 
-                <button type="button" onClick={deletePortfolio} className="px-3 py-1 rounded bg-red-600 text-sm">
+                <button
+                  type="button"
+                  onClick={deletePortfolio}
+                  className="px-3 py-1 rounded bg-red-600 text-sm"
+                >
                   Delete Portfolio
                 </button>
               </div>
@@ -379,50 +405,79 @@ export default function PortfolioPage() {
 
             <div className="mt-4 space-y-4">
               {model.projects.map((p, idx) => (
-                <div key={idx} className="p-3 rounded bg-[#0b1220] border border-white/8">
+                <div
+                  key={idx}
+                  className="p-3 rounded bg-[#0b1220] border border-white/8"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="text-sm text-[var(--muted)]">Title</label>
+                          <label className="text-sm text-[var(--muted)]">
+                            Title
+                          </label>
                           <input
                             value={p.title}
-                            onChange={(e) => updateProjectLocal(idx, { title: e.target.value })}
+                            onChange={(e) =>
+                              updateProjectLocal(idx, {
+                                title: e.target.value,
+                              })
+                            }
                             className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
                           />
                         </div>
 
                         <div>
-                          <label className="text-sm text-[var(--muted)]">Year</label>
+                          <label className="text-sm text-[var(--muted)]">
+                            Year
+                          </label>
                           <input
                             type="number"
                             value={p.year}
-                            onChange={(e) => updateProjectLocal(idx, { year: Number(e.target.value) || new Date().getFullYear() })}
+                            onChange={(e) =>
+                              updateProjectLocal(idx, {
+                                year:
+                                  Number(e.target.value) ||
+                                  new Date().getFullYear(),
+                              })
+                            }
                             className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
                           />
                         </div>
 
                         <div>
-                          <label className="text-sm text-[var(--muted)]">Category</label>
+                          <label className="text-sm text-[var(--muted)]">
+                            Category
+                          </label>
                           <input
                             value={p.category}
-                            onChange={(e) => updateProjectLocal(idx, { category: e.target.value })}
+                            onChange={(e) =>
+                              updateProjectLocal(idx, {
+                                category: e.target.value,
+                              })
+                            }
                             className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
                           />
                         </div>
                       </div>
 
                       <div className="mt-3">
-                        <label className="text-sm text-[var(--muted)]">Image</label>
+                        <label className="text-sm text-[var(--muted)]">
+                          Image
+                        </label>
                         <ImageUpload
                           value={projectImages[idx] ? [projectImages[idx]] : []}
-                          onChange={(files) => handleProjectImageChange(idx, files)}
+                          onChange={(files) =>
+                            handleProjectImageChange(idx, files)
+                          }
                           maxFiles={1}
                           maxSizeMB={5}
                           label="Upload project image (optional)"
                         />
                         <div className="text-xs text-[var(--muted)] mt-2">
-                          Current image path: {p.imageUrl || "— (upload to replace or set URL manually)"}
+                          Current image path:{" "}
+                          {p.imageUrl ||
+                            "— (upload to replace or set URL manually)"}
                         </div>
                       </div>
                     </div>
@@ -457,17 +512,35 @@ export default function PortfolioPage() {
               ))}
 
               {model.projects.length === 0 && (
-                <div className="text-[var(--muted)] text-sm py-4 text-center">No projects yet — add one.</div>
+                <div className="text-[var(--muted)] text-sm py-4 text-center">
+                  No projects yet — add one.
+                </div>
               )}
             </div>
           </section>
 
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={loading} className="px-4 py-2 rounded bg-[var(--accent)] text-black font-medium">
-              {loading ? "Saving..." : portfolioId ? "Save Portfolio (PUT)" : "Create Portfolio (POST)"}
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded bg-[var(--accent)] text-black font-medium"
+            >
+              {loading
+                ? "Saving..."
+                : portfolioId
+                ? "Save Portfolio (PUT)"
+                : "Create Portfolio (POST)"}
             </button>
 
-            <button type="button" onClick={() => { setModel(emptyModel); setProjectImages([]); setMessage(""); }} className="px-4 py-2 rounded bg-white/6">
+            <button
+              type="button"
+              onClick={() => {
+                setModel(emptyModel);
+                setProjectImages([]);
+                setMessage("");
+              }}
+              className="px-4 py-2 rounded bg-white/6"
+            >
               Reset
             </button>
           </div>

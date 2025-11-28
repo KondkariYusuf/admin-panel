@@ -1,22 +1,26 @@
 // routes/serviceRoute.js
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const serviceController = require("../controller/serviceController");
 
-// GET all service contents
+
+// GET singleton service content (first document)
 router.get("/", serviceController.getAllServiceContents);
 
-// GET one service content by ID
+// GET one service content by ID (if you ever need a specific one)
 router.get("/:id", serviceController.getServiceContentById);
 
-// POST create new service content
-router.post("/", serviceController.createServiceContent);
+// POST create or update singleton service content (multipart: payload + leftImage/rightImage)
+router.post("/", upload.any(), serviceController.createServiceContent);
 
-// PUT update existing service content
-router.put("/:id", serviceController.updateServiceContent);
+// PUT update existing service content by ID (multipart optional)
+router.put("/:id", upload.any(), serviceController.updateServiceContent);
 
-// DELETE remove service content
+// DELETE remove service content by ID
 router.delete("/:id", serviceController.deleteServiceContent);
 
 module.exports = router;

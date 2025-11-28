@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/portfolio', require('./routes/portfolioRoute'));
 app.use("/api/home", require("./routes/homeRoute"));
 app.use("/api/about", require("./routes/aboutRoute"));
-app.use("/api/service", require("./routes/serviceRoute"));
+app.use("/api/services", require("./routes/serviceRoute"));
 
 
 //start server
