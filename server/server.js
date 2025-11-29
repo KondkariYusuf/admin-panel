@@ -28,6 +28,7 @@ app.use("/api/home", protect, require("./routes/homeRoute"));
 app.use("/api/about", protect, require("./routes/aboutRoute"));
 app.use("/api/services", protect, require("./routes/serviceRoute"));
 app.use("/api/auth", require("./routes/authRoute"));
+app.use("/api/all", require("./routes/allRoute"));
 
 
 //start server
