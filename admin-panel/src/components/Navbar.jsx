@@ -82,18 +82,11 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import navLinks from "../constants/navLinks";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-
-  const navLinks = [
-    { label: "Home", to: "/" },
-    { label: "About Us", to: "/about" },
-    { label: "Services", to: "/services" },
-    { label: "Portfolio", to: "/portfolio" },
-    { label: "Contact Us", to: "/contact" },
-  ];
 
   const handleLogout = () => {
     localStorage.removeItem("token");   // ✅ Remove JWT
@@ -113,7 +106,7 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((item) => (
+          {/* {navLinks.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -121,7 +114,7 @@ export default function Navbar() {
             >
               {item.label}
             </Link>
-          ))}
+          ))} */}
 
           {/* Logout */}
           <button
@@ -129,6 +122,14 @@ export default function Navbar() {
             className="px-4 py-2 bg-red-600 text-sm rounded-md hover:bg-red-700"
           >
             Logout
+          </button>
+
+          {/* Settings */}
+          <button
+            // onClick={handleLogout}
+            className="px-4 py-2  text-sm rounded-md hover:bg-blue-700"
+          >
+            <img src="https://res.cloudinary.com/doihobmas/image/upload/v1764575785/settings_qpzbly.png" alt="settings" className="w-6 h-6" />
           </button>
         </div>
 
@@ -146,7 +147,7 @@ export default function Navbar() {
       {/* Mobile Dropdown */}
       {open && (
         <div className="md:hidden bg-[var(--panel)] border-t border-white/10 px-4 py-3 flex flex-col gap-4">
-          {navLinks.map((item) => (
+          {/* {navLinks.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -155,7 +156,7 @@ export default function Navbar() {
             >
               {item.label}
             </Link>
-          ))}
+          ))} */}
 
           {/* Logout */}
           <button

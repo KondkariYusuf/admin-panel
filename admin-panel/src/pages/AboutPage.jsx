@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import TagInput from "../components/TagInput";
 import ImageUpload from "../components/ImageUpload";
 import Navbar from "../components/Navbar";
+import SideBar from "../components/SideBar";
 import api from "../api/axios";
 
 /**
@@ -390,18 +391,22 @@ export default function AboutPage() {
   return (
     <div className="">
       <Navbar />
-      <h1 className="text-2xl font-semibold mb-4 p-6 max-w-6xl mx-auto">
-        Edit About Page
-      </h1>
+      <div className="flex flex-col md:flex-row gap-6 px-4 py-6 max-w-7xl mx-auto w-full">
+        <SideBar />
+        <div className="flex-1">
+          <div className="max-w-6xl w-full">
+            <h1 className="text-2xl font-semibold mb-4 px-2">
+              Edit About Page
+            </h1>
 
-      {message && (
-        <div className="mb-4 px-4 py-2 rounded bg-white/6">{message}</div>
-      )}
+            {message && (
+              <div className="mb-4 px-4 py-2 rounded bg-white/6">{message}</div>
+            )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-6 p-6 max-w-6xl mx-auto"
-      >
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6 rounded-lg border border-white/5 bg-[var(--panel)]/50 p-6"
+            >
         {/* Page Title */}
         <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
           <label className="text-sm text-[var(--muted)]">Page Title</label>
@@ -871,7 +876,10 @@ export default function AboutPage() {
             Reset
           </button>
         </div>
-      </form>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

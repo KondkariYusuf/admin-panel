@@ -4,6 +4,7 @@ import TagInput from "../components/TagInput";
 import ImageUpload from "../components/ImageUpload";
 import VideoUpload from "../components/VideoUpload";
 import Navbar from "../components/Navbar";
+import SideBar from "../components/SideBar";
 import api from "../api/axios";
 
 /**
@@ -296,17 +297,19 @@ export default function HomePage() {
   return (
     <div className="">
       <Navbar />
-      <h1 className="text-2xl font-semibold mb-4 max-w-5xl mx-auto p-6">
-        Edit Home Page
-      </h1>
+      <div className="flex flex-col md:flex-row gap-6 px-4 py-6 max-w-7xl mx-auto w-full">
+        <SideBar />
+        <div className="flex-1">
+          <div className="max-w-5xl w-full">
+            <h1 className="text-2xl font-semibold mb-4 px-2">Edit Home Page</h1>
 
-      {message && (
-        <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm">
-          {message}
-        </div>
-      )}
+            {message && (
+              <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm">
+                {message}
+              </div>
+            )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 p-6 max-w-5xl mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6 max-w-5xl rounded-lg border border-white/5 bg-[var(--panel)]/50">
         {/* HERO */}
         <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
           <h2 className="font-medium mb-3">Hero</h2>
@@ -633,7 +636,10 @@ export default function HomePage() {
             Reset
           </button>
         </div>
-      </form>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
