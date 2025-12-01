@@ -557,6 +557,7 @@ import api from "../api/axios.js";
 import TagInput from "../components/TagInput";
 import ImageUpload from "../components/ImageUpload";
 import Navbar from "../components/Navbar";
+import SideBar from "../components/SideBar";
 
 const emptyModel = {
   recentWork: {
@@ -873,18 +874,21 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="p-1 mx-auto">
+    <div className="">
       <Navbar />
-      <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-4">Edit Portfolio</h1>
+      <div className="flex flex-col md:flex-row gap-6 px-4 py-6 max-w-7xl mx-auto w-full">
+        <SideBar />
+        <div className="flex-1">
+          <div className="max-w-5xl w-full">
+            <h1 className="text-2xl font-semibold mb-4 px-2">Edit Portfolio</h1>
 
-        {message && (
-          <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm ">
-            {message}
-          </div>
-        )}
+            {message && (
+              <div className="mb-4 px-4 py-2 rounded bg-white/6 text-sm ">
+                {message}
+              </div>
+            )}
 
-        <form onSubmit={savePortfolio} className="space-y-6">
+            <form onSubmit={savePortfolio} className="space-y-6 rounded-lg border border-white/5 bg-[var(--panel)]/50 p-6">
           {/* Recent Work */}
           <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
             <h2 className="font-medium mb-3">Recent Work</h2>
@@ -1123,7 +1127,9 @@ export default function PortfolioPage() {
               Reset
             </button>
           </div>
-        </form>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );
