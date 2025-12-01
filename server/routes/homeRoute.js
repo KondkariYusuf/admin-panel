@@ -13,8 +13,8 @@ const {
 
 
 // Protect all routes below this line
-const { protect } = require("../middleware/authMiddleware");
-router.use(protect);
+// const { protect } = require("../middleware/authMiddleware");
+// router.use(protect);
 
 
 // Create home (usually once) - JSON body

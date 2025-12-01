@@ -40,8 +40,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 const serviceController = require("../controller/serviceController");
 
 // Protect all routes below this line
-const { protect } = require("../middleware/authMiddleware");
-router.use(protect);
+// const { protect } = require("../middleware/authMiddleware");
+// router.use(protect);
 
 // Now all of these need a token
 router.get("/", serviceController.getAllServiceContents);

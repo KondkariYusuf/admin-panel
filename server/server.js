@@ -17,16 +17,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //routes
-// app.use('/api/portfolio', require('./routes/portfolioRoute'));
-// app.use("/api/home", require("./routes/homeRoute"));
-// app.use("/api/about", require("./routes/aboutRoute"));
-// app.use("/api/services", require("./routes/serviceRoute"));
+app.use('/api/portfolio', require('./routes/portfolioRoute'));
+app.use("/api/home", require("./routes/homeRoute"));
+app.use("/api/about", require("./routes/aboutRoute"));
+app.use("/api/services", require("./routes/serviceRoute"));
+
+app.use("/api/admin", require("./routes/adminRoute"));
 
 
+<<<<<<< HEAD
 app.use("/api/portfolio", require("./routes/portfolioRoute"));
 app.use("/api/home", protect, require("./routes/homeRoute"));
 app.use("/api/about", protect, require("./routes/aboutRoute"));
 app.use("/api/services", protect, require("./routes/serviceRoute"));
+=======
+// app.use("/api/portfolio", protect, require("./routes/portfolioRoute"));
+// app.use("/api/home", protect, require("./routes/homeRoute"));
+// app.use("/api/about", protect, require("./routes/aboutRoute"));
+// app.use("/api/services", protect, require("./routes/serviceRoute"));
+>>>>>>> 2082da8ff8203b86073d8748f6c2fe57b0c0a892
 app.use("/api/auth", require("./routes/authRoute"));
 app.use("/api/all", require("./routes/allRoute"));
 

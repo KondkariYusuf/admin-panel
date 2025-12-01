@@ -830,6 +830,7 @@
 const mongoose = require("mongoose");
 const Portfolio = require("../models/portfolio");
 const cloudinary = require("../utils/cloudinary");
+const sharp = require("sharp");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -850,8 +851,67 @@ const getPortfolioDoc = async (portfolioId) => {
   return await Portfolio.findOne();
 };
 
-const uploadBufferToCloudinary = (buffer, folder, resource_type = "image") =>
-  new Promise((resolve, reject) => {
+/**
+ * Resizes an image buffer to the specified dimensions with high quality
+ * @param {Buffer} buffer - The image buffer to resize
+ * @param {number} width - Target width in pixels (default: 405)
+ * @param {number} height - Target height in pixels (default: 279.64)
+ * @returns {Promise<Buffer>} - Resized image buffer
+ */
+const resizeImageBuffer = async (buffer, width = 840, height = 580) => {
+  try {
+    const roundedWidth = Math.round(width);
+    const roundedHeight = Math.round(height);
+    
+    // Get image metadata to determine format
+    const metadata = await sharp(buffer).metadata();
+    const format = metadata.format;
+    
+    let sharpInstance = sharp(buffer)
+      .resize(roundedWidth, roundedHeight, {
+        fit: "cover", // Maintains aspect ratio and crops if necessary
+        position: "center", // Centers the crop
+        kernel: sharp.kernel.lanczos3, // High-quality resampling algorithm
+        withoutEnlargement: false, // Allow upscaling if needed
+      });
+
+    // Apply format-specific quality settings
+    if (format === "jpeg" || format === "jpg") {
+      sharpInstance = sharpInstance.jpeg({ 
+        quality: 95, // High quality (0-100)
+        mozjpeg: true, // Use mozjpeg for better compression
+        progressive: true // Progressive JPEG for better perceived quality
+      });
+    } else if (format === "png") {
+      sharpInstance = sharpInstance.png({ 
+        quality: 95, // PNG quality (0-100)
+        compressionLevel: 9, // Maximum compression (0-9)
+        palette: false // Keep full color depth
+      });
+    } else if (format === "webp") {
+      sharpInstance = sharpInstance.webp({ 
+        quality: 95, // WebP quality (0-100)
+        effort: 6 // Compression effort (0-6, higher = better compression)
+      });
+    }
+    // For other formats, sharp will handle automatically with good defaults
+
+    const resizedBuffer = await sharpInstance.toBuffer();
+    return resizedBuffer;
+  } catch (error) {
+    console.error("Error resizing image:", error);
+    throw new Error("Failed to resize image");
+  }
+};
+
+const uploadBufferToCloudinary = async (buffer, folder, resource_type = "image") => {
+  // Resize image before uploading if it's an image
+  let processedBuffer = buffer;
+  if (resource_type === "image") {
+    processedBuffer = await resizeImageBuffer(buffer);
+  }
+
+  return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder, resource_type },
       (error, result) => {
@@ -859,8 +919,9 @@ const uploadBufferToCloudinary = (buffer, folder, resource_type = "image") =>
         resolve(result);
       }
     );
-    stream.end(buffer);
+    stream.end(processedBuffer);
   });
+};
 
 /* ---------- PORTFOLIO CRUD ---------- */
 

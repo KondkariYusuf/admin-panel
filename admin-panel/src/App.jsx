@@ -7,6 +7,7 @@ import AboutPage from "./pages/AboutPage";
 import ServiceInfo from "./pages/ServiceInfo";
 import ProtectedRoute from "./ProtectedRoute";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -52,6 +53,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+      </Routes>
+      <Routes>
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   );

@@ -80,6 +80,7 @@ export default function HomePage() {
   const [videoFiles, setVideoFiles] = useState([]);
   const [parallaxFiles, setParallaxFiles] = useState([]);
   const [serviceImages, setServiceImages] = useState([]);
+  const [clientLogos, setClientLogos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -216,7 +217,62 @@ export default function HomePage() {
   };
 
   // ---------- client companies ----------
-  const setClientCompanies = (arr) => setClientSection({ companyNames: arr });
+  const handleClientLogos = (files) => {
+    if (!files || !files.length) return;
+    // append new files to existing clientLogos state
+    setClientLogos((prev) => [...prev, ...files]);
+  
+    // do NOT clear existing companyNames — we want to append, not replace
+    // only clear companyNames if you explicitly want to wipe them (we won't)
+  };
+  // remove an existing logo URL (already saved on model)
+const removeExistingLogo = (index) => {
+  setModel((m) => {
+    const next = { ...m };
+    if (!Array.isArray(next.clientSection?.companyNames)) return next;
+    next.clientSection = {
+      ...(next.clientSection || {}),
+      companyNames: next.clientSection.companyNames.filter((_, i) => i !== index),
+    };
+    return next;
+  });
+};
+
+// remove a newly selected file (before upload)
+const removeNewLogo = (index) => {
+  setClientLogos((prev) => prev.filter((_, i) => i !== index));
+};
+// BEFORE appending files, we build payload (deep clone)
+const fd = new FormData();
+const payload = JSON.parse(JSON.stringify(model));
+
+// We WILL NOT clear payload.clientSection.companyNames here — keep existing URLs
+payload.clientSection = {
+  ...(payload.clientSection || {}),
+  companyNames: Array.isArray(payload.clientSection.companyNames)
+    ? payload.clientSection.companyNames.slice()
+    : [],
+};
+
+// ... other file handling (parallax, services, video) stays the same ...
+
+// append client logos — but set indices so they append after existing logos
+const existingCount =
+  Array.isArray(payload.clientSection.companyNames) &&
+  payload.clientSection.companyNames.length
+    ? payload.clientSection.companyNames.length
+    : 0;
+
+clientLogos.forEach((file, idx) => {
+  if (file) {
+    // send fieldname so backend can place urls at correct index
+    fd.append(`clientLogo_${existingCount + idx}`, file, file.name);
+  }
+});
+
+// append the payload JSON AFTER we've prepared it
+fd.append("payload", JSON.stringify(payload));
+
 
   // ---------- parallax image handler ----------
   const handleParallaxFiles = (files) => {
@@ -279,6 +335,13 @@ export default function HomePage() {
         payload.video = { ...(payload.video || {}), videoUrl: "" };
       }
 
+      if (clientLogos && clientLogos.length) {
+        payload.clientSection = {
+          ...(payload.clientSection || {}),
+          companyNames: [],
+        };
+      }
+
       // append JSON payload as string
       fd.append("payload", JSON.stringify(payload));
 
@@ -295,6 +358,11 @@ export default function HomePage() {
       // append video files
       videoFiles.forEach((file, idx) => {
         if (file) fd.append(`video_${idx}`, file, file.name);
+      });
+
+      // append client logos
+      clientLogos.forEach((file, idx) => {
+        if (file) fd.append(`clientLogo_${idx}`, file, file.name);
       });
 
       // send to backend: PUT /api/home
@@ -316,8 +384,9 @@ export default function HomePage() {
       serviceImages.forEach((file) => file && URL.revokeObjectURL(file));
       parallaxFiles.forEach((file) => file && URL.revokeObjectURL(file));
       videoFiles.forEach((file) => file && URL.revokeObjectURL(file));
+      clientLogos.forEach((file) => file && URL.revokeObjectURL(file));
     };
-  }, [serviceImages, parallaxFiles, videoFiles]);
+  }, [serviceImages, parallaxFiles, videoFiles, clientLogos]);
 
   return (
     <div className="">
@@ -620,7 +689,7 @@ export default function HomePage() {
         </section>
 
         {/* CLIENT SECTION */}
-        <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
+        {/* <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
           <h2 className="font-medium mb-2">Client Section</h2>
           <label className="text-sm text-[var(--muted)]">Description</label>
           <textarea
@@ -632,16 +701,121 @@ export default function HomePage() {
             className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
           />
 
-          <div className="mt-3">
-            <label className="text-sm text-[var(--muted)]">
-              Company Names (tags)
-            </label>
-            <TagInput
-              value={model.clientSection.companyNames}
-              onChange={setClientCompanies}
+          <div className="mt-3 space-y-3">
+            <label className="text-sm text-[var(--muted)]">Client Logos</label>
+
+            {!clientLogos.length &&
+              Array.isArray(model.clientSection.companyNames) &&
+              model.clientSection.companyNames.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {model.clientSection.companyNames.map((url, idx) => (
+                    <div
+                      key={`${url}-${idx}`}
+                      className="rounded border border-white/8 p-2 bg-[#0b1220]"
+                    >
+                      <img
+                        src={url}
+                        alt={`Client logo ${idx + 1}`}
+                        className="w-full h-24 object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            <ImageUpload
+              value={clientLogos}
+              onChange={handleClientLogos}
+              maxFiles={8}
+              label="Upload client logos (drag & drop or click)"
             />
+            <div className="text-xs text-[var(--muted)]">
+              Uploading new files will replace the current logos.
+            </div>
           </div>
-        </section>
+        </section> */}
+
+{/* CLIENT SECTION */}
+<section className="bg-[var(--panel)] p-4 rounded border border-white/6">
+  <h2 className="font-medium mb-2">Client Section</h2>
+  <label className="text-sm text-[var(--muted)]">Description</label>
+  <textarea
+    rows={3}
+    value={model.clientSection.descriptionText}
+    onChange={(e) =>
+      setClientSection({ descriptionText: e.target.value })
+    }
+    className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
+  />
+
+  <div className="mt-3 space-y-3">
+    <label className="text-sm text-[var(--muted)]">Client Logos</label>
+
+    {/* Existing saved logos (from model.clientSection.companyNames) */}
+    {Array.isArray(model.clientSection.companyNames) &&
+      model.clientSection.companyNames.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {model.clientSection.companyNames.map((url, idx) => (
+            <div
+              key={`${url}-${idx}`}
+              className="relative rounded border border-white/8 p-2 bg-[#0b1220]"
+            >
+              <img
+                src={url}
+                alt={`Client logo ${idx + 1}`}
+                className="w-full h-24 object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => removeExistingLogo(idx)}
+                className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center"
+                title="Remove"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+    {/* Newly selected files (before upload) */}
+    {clientLogos && clientLogos.length > 0 && (
+      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+        {clientLogos.map((file, idx) => (
+          <div
+            key={file.name + "_" + idx}
+            className="relative rounded border border-white/8 p-2 bg-[#0b1220]"
+          >
+            <img
+              src={URL.createObjectURL(file)}
+              alt={file.name}
+              className="w-full h-24 object-contain"
+            />
+            <button
+              type="button"
+              onClick={() => removeNewLogo(idx)}
+              className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center"
+              title="Remove"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <ImageUpload
+      value={clientLogos}
+      onChange={handleClientLogos}
+      maxFiles={8}
+      label="Add client logos (drag & drop or click) — these will append"
+    />
+    <div className="text-xs text-[var(--muted)]">
+      Uploading new files will append to current logos.
+    </div>
+  </div>
+</section>
+
 
         {/* PARALLAX IMAGE */}
         <section className="bg-[var(--panel)] p-4 rounded border border-white/6">
@@ -695,6 +869,7 @@ export default function HomePage() {
               setParallaxFiles([]);
               setServiceImages([]);
               setVideoFiles([]);
+              setClientLogos([]);
               setMessage("");
             }}
             className="px-4 py-2 rounded bg-white/6"
