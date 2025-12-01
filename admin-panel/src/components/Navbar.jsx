@@ -93,6 +93,10 @@ export default function Navbar() {
     navigate("/login");                  // ✅ Redirect
   };
 
+  const handleSettings = () => {
+    navigate("/settings");                  // ✅ Redirect
+  };
+
   return (
     <nav className="w-full bg-[var(--panel)] border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -126,7 +130,7 @@ export default function Navbar() {
 
           {/* Settings */}
           <button
-            // onClick={handleLogout}
+            onClick={handleSettings}
             className="px-4 py-2  text-sm rounded-md hover:bg-blue-700"
           >
             <img src="https://res.cloudinary.com/doihobmas/image/upload/v1764575785/settings_qpzbly.png" alt="settings" className="w-6 h-6" />

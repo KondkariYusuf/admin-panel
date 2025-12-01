@@ -4,7 +4,9 @@ const navLinks = [
   { label: "Services", to: "/services" },
   { label: "Portfolio", to: "/portfolio" },
   { label: "Contact Us", to: "/contact" },
+  { label: "Settings", to: "/settings" },
 ];
 
 export default navLinks;
+
 
