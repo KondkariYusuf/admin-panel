@@ -472,7 +472,7 @@ export default function AboutPage() {
               onChange={handleGalleryFiles}
               maxFiles={8}
             />
-            <div className="mt-2 space-y-2">
+            {/* <div className="mt-2 space-y-2">
               {model.aboutArea.galleryImages.map((g, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <input
@@ -493,7 +493,46 @@ export default function AboutPage() {
                   />
                 </div>
               ))}
-            </div>
+            </div> */}
+
+            <div className="mt-2 space-y-3">
+  {model.aboutArea.galleryImages.map((g, idx) => {
+    const file = galleryFiles[idx];
+    const src = file ? URL.createObjectURL(file) : g.imageUrl;
+
+    return (
+      <div key={idx} className="flex items-center gap-3">
+        {src && (
+          <img
+            src={src}
+            alt={g.alt || `Gallery image ${idx + 1}`}
+            className="w-20 h-20 rounded object-cover border border-white/10"
+          />
+        )}
+
+        <div className="flex-1 flex gap-2">
+          <input
+            value={g.imageUrl}
+            onChange={(e) =>
+              updateGalleryMeta(idx, { imageUrl: e.target.value })
+            }
+            placeholder="Image path (optional if uploading)"
+            className="flex-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
+          />
+          {/* <input
+            value={g.alt}
+            onChange={(e) =>
+              updateGalleryMeta(idx, { alt: e.target.value })
+            }
+            placeholder="Alt text"
+            className="w-48 px-3 py-2 rounded bg-[#071028] border border-white/8"
+          /> */}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
           </div>
         </section>
 
@@ -644,7 +683,7 @@ export default function AboutPage() {
             className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
           />
 
-          <div className="mt-3">
+          {/* <div className="mt-3">
             <label className="text-sm text-[var(--muted)]">
               Existing image path
             </label>
@@ -668,7 +707,46 @@ export default function AboutPage() {
                 maxSizeMB={5}
               />
             </div>
-          </div>
+          </div> */}
+          <div className="mt-3">
+  {(model.mediaSection.mediaImage.imageUrl || mediaFiles.length > 0) && (
+    <img
+      src={
+        mediaFiles.length
+          ? URL.createObjectURL(mediaFiles[0])
+          : model.mediaSection.mediaImage.imageUrl
+      }
+      alt={model.mediaSection.mediaImage.alt || "Media preview"}
+      className="w-full max-h-64 object-cover rounded border border-white/10 mb-2"
+    />
+  )}
+
+  <label className="text-sm text-[var(--muted)]">
+    Image path (optional)
+  </label>
+  <input
+    value={model.mediaSection.mediaImage.imageUrl}
+    onChange={(e) =>
+      setMediaSection({
+        mediaImage: {
+          ...model.mediaSection.mediaImage,
+          imageUrl: e.target.value,
+        },
+      })
+    }
+    className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
+  />
+
+  <div className="mt-2">
+    <ImageUpload
+      value={mediaFiles}
+      onChange={handleMediaFiles}
+      maxFiles={1}
+      maxSizeMB={5}
+    />
+  </div>
+</div>
+
         </section>
 
         {/* Awards Section */}
@@ -828,7 +906,7 @@ export default function AboutPage() {
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="text-sm text-[var(--muted)]">
                       Image
                     </label>
@@ -841,7 +919,32 @@ export default function AboutPage() {
                     <div className="text-xs text-[var(--muted)] mt-2">
                       Current: {m.imageUrl || "(upload to replace)"}
                     </div>
-                  </div>
+                  </div> */}
+                  <div>
+  <label className="text-sm text-[var(--muted)]">
+    Image
+  </label>
+
+  <ImageUpload
+    value={teamFiles[i] ? [teamFiles[i]] : []}
+    onChange={(files) => handleTeamImageChange(i, files)}
+    maxFiles={1}
+    maxSizeMB={5}
+  />
+
+  {(m.imageUrl || teamFiles[i]) && (
+    <img
+      src={
+        teamFiles[i]
+          ? URL.createObjectURL(teamFiles[i])
+          : m.imageUrl
+      }
+      alt={m.name || "Team member"}
+      className="mt-2 w-20 h-20 rounded-full object-cover border border-white/10"
+    />
+  )}
+</div>
+
                 </div>
 
                 <div className="mt-2 flex justify-end">
