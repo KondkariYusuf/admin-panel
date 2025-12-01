@@ -22,6 +22,8 @@ app.use("/api/home", require("./routes/homeRoute"));
 app.use("/api/about", require("./routes/aboutRoute"));
 app.use("/api/services", require("./routes/serviceRoute"));
 
+app.use("/api/admin", require("./routes/adminRoute"));
+
 
 // app.use("/api/portfolio", protect, require("./routes/portfolioRoute"));
 // app.use("/api/home", protect, require("./routes/homeRoute"));
