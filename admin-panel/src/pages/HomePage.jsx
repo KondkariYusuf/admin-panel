@@ -118,7 +118,9 @@ export default function HomePage() {
           data.serviceSection &&
           Array.isArray(data.serviceSection.services)
         ) {
-          setServiceImages(new Array(data.serviceSection.services.length).fill(null));
+          setServiceImages(
+            new Array(data.serviceSection.services.length).fill(null)
+          );
         }
       } catch (err) {
         console.error("Failed to fetch home data", err);
@@ -139,16 +141,28 @@ export default function HomePage() {
     setModel((m) => ({ ...m, video: { ...m.video, ...payload } }));
 
   const setServiceSection = (payload) =>
-    setModel((m) => ({ ...m, serviceSection: { ...m.serviceSection, ...payload } }));
+    setModel((m) => ({
+      ...m,
+      serviceSection: { ...m.serviceSection, ...payload },
+    }));
 
   const setFunFactSection = (payload) =>
-    setModel((m) => ({ ...m, funFactSection: { ...m.funFactSection, ...payload } }));
+    setModel((m) => ({
+      ...m,
+      funFactSection: { ...m.funFactSection, ...payload },
+    }));
 
   const setClientSection = (payload) =>
-    setModel((m) => ({ ...m, clientSection: { ...m.clientSection, ...payload } }));
+    setModel((m) => ({
+      ...m,
+      clientSection: { ...m.clientSection, ...payload },
+    }));
 
   const setParallaxImage = (payload) =>
-    setModel((m) => ({ ...m, parallaxImage: { ...m.parallaxImage, ...payload } }));
+    setModel((m) => ({
+      ...m,
+      parallaxImage: { ...m.parallaxImage, ...payload },
+    }));
 
   // ---------- services management ----------
   const addService = () => {
@@ -156,7 +170,10 @@ export default function HomePage() {
       services: [
         ...model.serviceSection.services,
         {
-          number: `(${String(model.serviceSection.services.length + 1).padStart(2, "0")})`,
+          number: `(${String(model.serviceSection.services.length + 1).padStart(
+            2,
+            "0"
+          )})`,
           title: "New Service",
           list: [],
           imageUrl: "",
@@ -293,6 +310,14 @@ export default function HomePage() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      serviceImages.forEach((file) => file && URL.revokeObjectURL(file));
+      parallaxFiles.forEach((file) => file && URL.revokeObjectURL(file));
+      videoFiles.forEach((file) => file && URL.revokeObjectURL(file));
+    };
+  }, [serviceImages, parallaxFiles, videoFiles]);
+
   return (
     <div className="">
       <Navbar />
@@ -387,19 +412,43 @@ export default function HomePage() {
             <label className="block text-sm text-[var(--muted)]">
               Existing Video URL (optional)
             </label>
-            <input
+            {/* <input
               type="text"
               value={model.video.videoUrl}
               onChange={(e) => setVideo({ videoUrl: e.target.value })}
               className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
               placeholder="https://..."
+            /> */}
+            {(model.video.videoUrl || videoFiles.length > 0) && (
+              <video
+                controls
+                className="w-full mt-3 rounded border border-white/8"
+                src={
+                  videoFiles.length
+                    ? URL.createObjectURL(videoFiles[0])
+                    : model.video.videoUrl
+                }
+              />
+            )}
+
+            <input
+              type="text"
+              value={model.video.videoUrl}
+              onChange={(e) => setVideo({ videoUrl: e.target.value })}
+              className="w-full mt-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
+              placeholder="Paste video URL or upload below"
             />
+
             <div className="text-xs text-[var(--muted)] mt-1">
               Or upload a new video below (will replace URL).
             </div>
           </div>
 
-          <VideoUpload value={videoFiles} onChange={handleVideoFiles} maxFiles={1} />
+          <VideoUpload
+            value={videoFiles}
+            onChange={handleVideoFiles}
+            maxFiles={1}
+          />
         </section>
 
         {/* SERVICE SECTION */}
@@ -420,14 +469,15 @@ export default function HomePage() {
             <input
               type="text"
               value={model.serviceSection.heading}
-              onChange={(e) =>
-                setServiceSection({ heading: e.target.value })
-              }
+              onChange={(e) => setServiceSection({ heading: e.target.value })}
               className="w-full px-3 py-2 mt-1 rounded bg-[#071028] border border-white/8"
             />
 
             {model.serviceSection.services.map((s, idx) => (
-              <div key={idx} className="p-3 rounded bg-[#0b1220] border border-white/8">
+              <div
+                key={idx}
+                className="p-3 rounded bg-[#0b1220] border border-white/8"
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="text-sm text-[var(--muted)]">Number</div>
@@ -453,9 +503,7 @@ export default function HomePage() {
 
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm text-[var(--muted)]">
-                      Title
-                    </label>
+                    <label className="text-sm text-[var(--muted)]">Title</label>
                     <input
                       value={s.title}
                       onChange={(e) =>
@@ -501,7 +549,19 @@ export default function HomePage() {
                     label="Upload image for this service"
                   />
                   <div className="text-xs text-[var(--muted)] mt-2">
-                    Current image path: {s.imageUrl || "— (upload will replace)"}
+                    {/* Current image path: {s.imageUrl || "— (upload will replace)"} */}
+                    Current image:{" "}
+                    {(s.imageUrl || serviceImages[idx]) && (
+                      <img
+                        src={
+                          serviceImages[idx]
+                            ? URL.createObjectURL(serviceImages[idx])
+                            : s.imageUrl
+                        }
+                        alt="Service Preview"
+                        className="mt-3 w-40 h-40 object-cover rounded border border-white/10"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -526,9 +586,7 @@ export default function HomePage() {
             <label className="text-sm text-[var(--muted)]">Title</label>
             <input
               value={model.funFactSection.title}
-              onChange={(e) =>
-                setFunFactSection({ title: e.target.value })
-              }
+              onChange={(e) => setFunFactSection({ title: e.target.value })}
               className="w-full px-3 py-2 mt-1 rounded bg-[#071028] border border-white/8"
             />
 
@@ -536,17 +594,13 @@ export default function HomePage() {
               <div key={i} className="flex gap-2 items-center">
                 <input
                   value={it.value}
-                  onChange={(e) =>
-                    updateFunFact(i, { value: e.target.value })
-                  }
+                  onChange={(e) => updateFunFact(i, { value: e.target.value })}
                   className="px-3 py-2 rounded bg-[#071028] border border-white/8 w-36"
                   placeholder="Value (ex: 1.8M)"
                 />
                 <input
                   value={it.text}
-                  onChange={(e) =>
-                    updateFunFact(i, { text: e.target.value })
-                  }
+                  onChange={(e) => updateFunFact(i, { text: e.target.value })}
                   className="flex-1 px-3 py-2 rounded bg-[#071028] border border-white/8"
                   placeholder="Label text"
                 />
@@ -598,9 +652,21 @@ export default function HomePage() {
           />
 
           <div className="mt-3">
-            <div className="text-sm text-[var(--muted)]">
+            {/* <div className="text-sm text-[var(--muted)]">
               Existing image path: {model.parallaxImage.imageUrl || "—"}
-            </div>
+            </div> */}
+            {(model.parallaxImage.imageUrl || parallaxFiles.length > 0) && (
+              <img
+                src={
+                  parallaxFiles.length
+                    ? URL.createObjectURL(parallaxFiles[0])
+                    : model.parallaxImage.imageUrl
+                }
+                alt="Parallax Preview"
+                className="mt-3 w-full max-h-[260px] object-cover rounded border border-white/10"
+              />
+            )}
+
             <ImageUpload
               value={parallaxFiles}
               onChange={handleParallaxFiles}
