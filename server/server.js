@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 // app.use("/api/services", require("./routes/serviceRoute"));
 
 
-app.use("/api/portfolio", protect, require("./routes/portfolioRoute"));
+app.use("/api/portfolio", require("./routes/portfolioRoute"));
 app.use("/api/home", protect, require("./routes/homeRoute"));
 app.use("/api/about", protect, require("./routes/aboutRoute"));
 app.use("/api/services", protect, require("./routes/serviceRoute"));
