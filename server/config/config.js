@@ -1,8 +1,8 @@
 //config/config.js
 const mongoose = require('mongoose');
 
-const mongoURI = 'mongodb://localhost:27017/adminPanel'; 
-
+const mongoURI = process.env.MONGO_URI; 
+console.log("MongoDB URI:", mongoURI);
 async function connectDB() {
   try {
     await mongoose.connect(mongoURI);
