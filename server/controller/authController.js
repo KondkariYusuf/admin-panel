@@ -27,19 +27,32 @@ exports.loginAdmin = async (req, res) => {
     }
 
     // Generate Token
-    const token = jwt.sign(
-      { id: admin._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // Create JWT and a short opaque session token stored in a cookie.
+    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+    const sessionToken = crypto.randomBytes(32).toString("hex");
+    const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    // Persist tokens on the admin record
+    admin.jwtToken = token;
+    admin.sessionToken = sessionToken;
+    admin.sessionExpires = new Date(sessionExpiry);
+    await admin.save();
+
+    // Set httpOnly cookie with opaque session token
+    const cookieOpts = {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "lax",
+    };
+    if (process.env.NODE_ENV === "production") cookieOpts.secure = true;
+
+    res.cookie("session", sessionToken, cookieOpts);
+
+    // Return minimal info (no jwt in response). Client can rely on cookie.
     res.json({
       message: "Login success",
-      token,
-      admin: {
-        id: admin._id,
-        email: admin.email
-      }
+      admin: { id: admin._id, email: admin.email },
     });
 
   } catch (err) {
@@ -144,5 +157,29 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+/* LOGOUT ADMIN - clears session token and cookie */
+exports.logoutAdmin = async (req, res) => {
+  try {
+    const sessionToken = req.cookies?.session;
+    if (sessionToken) {
+      const admin = await Admin.findOne({ sessionToken });
+      if (admin) {
+        admin.sessionToken = null;
+        admin.jwtToken = null;
+        admin.sessionExpires = null;
+        await admin.save();
+      }
+    }
+
+    // Clear cookie
+    res.clearCookie("session");
+    return res.json({ message: "Logged out" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };

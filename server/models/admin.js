@@ -17,8 +17,20 @@ const AdminSchema = new mongoose.Schema(
       enum: ["admin"],
       default: "admin",
     },
+    
+    // session/jwt fields for cookie-based session management
+    jwtToken: {
+      type: String,
+    },
+    sessionToken: {
+      type: String,
+      index: true,
+    },
+    sessionExpires: {
+      type: Date,
+    }
 
-    resetPasswordToken: {
+    ,resetPasswordToken: {
       type: String,
       default: null,
     },

@@ -22,12 +22,16 @@ const {
   loginAdmin,
   forgotPassword,
   resetPassword,
+  logoutAdmin,
 } = require("../controller/authController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 router.post("/login", loginAdmin);
+
+// Logout (clears cookie + server session)
+router.post("/logout", protect, logoutAdmin);
 
 // 🔹 Forgot password (no auth needed)
 router.post("/forgot-password", forgotPassword);

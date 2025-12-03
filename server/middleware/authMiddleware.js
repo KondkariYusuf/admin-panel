@@ -2,21 +2,36 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../models/admin");
 
 // ✅ Authentication middleware - verifies JWT and attaches admin to request
-exports.protect = (req, res, next) => {
-  let token = req.headers.authorization;
-
-  if (!token || !token.startsWith("Bearer")) {
-    return res.status(401).json({ message: "Not authorized, token missing" });
-  }
-
+exports.protect = async (req, res, next) => {
   try {
-    token = token.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = decoded;   // adds admin ID to request
-    next();
+    // Prefer session cookie flow: fetch JWT stored in DB using session token
+    const sessionToken = req.cookies?.session || req.headers['x-session-token'];
+    if (sessionToken) {
+      const adminDoc = await Admin.findOne({ sessionToken, sessionExpires: { $gt: new Date() } });
+      if (!adminDoc) return res.status(401).json({ message: 'Not authorized, invalid or expired session' });
 
+      const jwtToken = adminDoc.jwtToken;
+      if (!jwtToken) return res.status(401).json({ message: 'Not authorized, jwt missing' });
+
+      const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
+      req.admin = decoded; // { id: ... }
+      req.adminDoc = adminDoc; // attach full admin doc for downstream use
+      return next();
+    }
+
+    // Fallback: Bearer token in Authorization header (legacy)
+    let token = req.headers.authorization;
+    if (!token || !token.startsWith('Bearer')) {
+      return res.status(401).json({ message: 'Not authorized, token missing' });
+    }
+
+    token = token.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.admin = decoded;
+    next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    console.error('Auth protect error:', err);
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
