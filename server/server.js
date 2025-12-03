@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require('express');
 const connectDB = require('./config/config');
 const cors = require('cors');
+//const otpRoutes = require("./server/routes/otpRoutes");
+
 
 const { protect, authorizeRoles } = require("./middleware/authMiddleware");
 
@@ -17,7 +19,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //routes-unprotected
-// app.use('/api/portfolio', require('./routes/portfolioRoute'));
+// app.use("/api/otp", require("./routes/otpRoutes"));
+
+app.use('/api/portfolio', require('./routes/portfolioRoute'));
 // app.use("/api/home", require("./routes/homeRoute"));
 // app.use("/api/about", require("./routes/aboutRoute"));
 // app.use("/api/services", require("./routes/serviceRoute"));

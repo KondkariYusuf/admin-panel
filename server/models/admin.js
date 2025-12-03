@@ -26,6 +26,14 @@ const AdminSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    otp: {
+      type: String,
+      default: null,
+    },
+    otpExpiry: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
