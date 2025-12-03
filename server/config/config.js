@@ -1,7 +1,7 @@
 //config/config.js
 const mongoose = require('mongoose');
 
-const mongoURI = process.env.MONGO_URI; 
+const mongoURI = "mongodb+srv://devteam_db_user:cSvIHgoaFX48RuO4@sage.81ahy6f.mongodb.net/?appName=sage"; 
 console.log("MongoDB URI:", mongoURI);
 async function connectDB() {
   try {
