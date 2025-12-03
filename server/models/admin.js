@@ -12,12 +12,25 @@ const AdminSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ["admin"],
+      default: "admin",
+    },
 
     resetPasswordToken: {
       type: String,
       default: null,
     },
     resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
+    otp: {
+      type: String,
+      default: null,
+    },
+    otpExpiry: {
       type: Date,
       default: null,
     },

@@ -25,12 +25,12 @@ async function seedAdmin() {
 
     // Create admin
     await Admin.create({
-      email: "rahultag161@gmail.com",
+      email: "kondkariyusuf345@gmail.com",
       password: hashedPassword
     });
 
     console.log("Admin seeded successfully");
-    console.log("Email: rahultag161@gmail.com");
+    console.log("Email: kondkariyusuf345@gmail.com");
     console.log("Password: admin123");
 
     process.exit();
