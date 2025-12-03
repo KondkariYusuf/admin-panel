@@ -1,7 +1,7 @@
+require("dotenv").config();
 const express = require('express');
 const connectDB = require('./config/config');
 const cors = require('cors');
-require("dotenv").config();
 
 const { protect } = require("./middleware/authMiddleware");
 
@@ -25,17 +25,14 @@ app.use("/api/services", require("./routes/serviceRoute"));
 app.use("/api/admin", require("./routes/adminRoute"));
 
 
-<<<<<<< HEAD
 app.use("/api/portfolio", require("./routes/portfolioRoute"));
 app.use("/api/home", protect, require("./routes/homeRoute"));
 app.use("/api/about", protect, require("./routes/aboutRoute"));
 app.use("/api/services", protect, require("./routes/serviceRoute"));
-=======
 // app.use("/api/portfolio", protect, require("./routes/portfolioRoute"));
 // app.use("/api/home", protect, require("./routes/homeRoute"));
 // app.use("/api/about", protect, require("./routes/aboutRoute"));
 // app.use("/api/services", protect, require("./routes/serviceRoute"));
->>>>>>> 2082da8ff8203b86073d8748f6c2fe57b0c0a892
 app.use("/api/auth", require("./routes/authRoute"));
 app.use("/api/all", require("./routes/allRoute"));
 
