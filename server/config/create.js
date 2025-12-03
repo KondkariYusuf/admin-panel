@@ -1,6 +1,6 @@
+require("dotenv").config();
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-require("dotenv").config();
 
 // Import admin model
 const Admin = require("../models/admin");
@@ -25,12 +25,12 @@ async function seedAdmin() {
 
     // Create admin
     await Admin.create({
-      email: "admin@gmail.com",
+      email: "kondkariyusuf345@gmail.com",
       password: hashedPassword
     });
 
     console.log("Admin seeded successfully");
-    console.log("Email: admin@gmail.com");
+    console.log("Email: kondkariyusuf345@gmail.com");
     console.log("Password: admin123");
 
     process.exit();

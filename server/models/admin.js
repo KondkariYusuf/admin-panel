@@ -16,7 +16,16 @@ const AdminSchema = new mongoose.Schema(
       type: String,
       enum: ["admin"],
       default: "admin",
-    }
+    },
+
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
